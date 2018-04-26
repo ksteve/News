@@ -1,0 +1,17 @@
+{
+  "name": "news",
+  "version": "1.0.0",
+  "description": "gathers news articles daily, performs text mining, and stores information in sqlite db",
+  "main": "index.js",
+  "dependencies": {
+    "axios": "^0.18.0",
+    "newsapi": "^2.2.2",
+    "unfluff": "^3.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Kyle Stevenson",
+  "license": "ISC"
+}
