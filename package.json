@@ -8,7 +8,8 @@
     "knex": "^0.14.6",
     "newsapi": "^2.2.2",
     "sqlite3": "^4.0.0",
-    "unfluff": "^3.0.0"
+    "unfluff": "^3.0.0",
+    "watson-developer-cloud": "^3.4.0"
   },
   "devDependencies": {},
   "scripts": {
