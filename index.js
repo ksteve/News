@@ -1,4 +1,5 @@
 const util = require('util');
+const fs = require('fs');
 const NewsApi = require("newsapi");
 const newsapi = new NewsApi("1f62f144d9584aaeb3fb553f42c989a6");
 const extractor = require("unfluff");
@@ -18,35 +19,49 @@ const analyze = util.promisify(nlu.analyze);
 
 run();
 
-function createTable() {
-    knex.schema.createTable('articles', function (table) {
+async function createTable() {
+    await knex.schema.createTable('articles', function (table) {
+        table.increments('id');
         table.dateTime('date');
         table.string('url');
         table.string('title');
         table.string('text');
-        table.string('topics');
+        table.string('description');
+        table.string('source');
+        table.string('concepts');
         table.string('keywords');
         table.string('entities');
     });
 }
 
 function insert(data) {
-    knex.insert(data).into('articles')
+    return knex('articles').insert(data);
 }
 
-async function getTopHeadlines() {
-    let headlines = await newsapi.v2.topHeadlines({
-        language: 'en'
+function getTopHeadlines() {
+    return newsapi.v2.topHeadlines({
+        language: 'en',
+        sources: 'google-news'
     });
-    return headlines.articles;
+    //return headlines.articles;
 }
 
-async function getHtml(url) {
+async function urlInDb(url){
+     let x = await knex('articles').where({url: url})
+    return x;
+    // if(rows.length > 0){
+    //     return false;
+    // } else {
+    //     return true;
+    // }
+}
+
+function getHtml(url) {
     //if(isUrl(url))
-    return await axios(url);
+    return axios(url);
 }
 
-async function getExtractedContent(html) {
+function getExtractedContent(html) {
     return extractor(html);
 }
 
@@ -56,34 +71,23 @@ async function getNluData(entries) {
             let params = {
                 'text': x.text,
                 'features': {
-                    'entities': {
-                        'emotion': true,
-                        'sentiment': true,
-                        'limit': 2
-                    },
-                    'keywords': {
-                        'emotion': true,
-                        'sentiment': true,
-                        'limit': 2
-                    }
+                    'entities': {'limit': 5},
+                    'keywords': {'limit': 5},
+                    'concepts': {'limit': 5}
                 }
             }
-
-            //let data = await analyze(params);
 
             return await new Promise((resolve, reject) => {
                 nlu.analyze(params, function (err, response) {
                     if (err)
                         reject(err)
                     else
-                        //resolve(response)
-                        x.entities = response.entities
-                        x.keywords = response.keywprds
+                        x.entities = JSON.stringify(response.entities)
+                        x.keywords = JSON.stringify(response.keywords)
+                        x.concepts = JSON.stringify(response.concepts)
                         resolve(x);
                 });
             });
-
-
         } catch (error) {
             console.log(error);
         }
@@ -95,18 +99,24 @@ async function run() {
 
     try {
         //create sqlite table if it doesnt exist
-        createTable();
+        //await createTable();
 
         //get top headlines from newsapi
         let headlines = await getTopHeadlines();
-        entries = headlines.map(x => {
+
+        entries = headlines.articles.map(x => {
             return {
-                date: x.publishedAt,
+                date: new Date(x.publishedAt),
                 url: x.url,
                 title: x.title,
                 description: x.description,
                 source: x.source.name
             }
+        });
+
+        entries = entries.filter(async function(x) {
+            let rows = await urlInDb(x.url);
+            return (rows.length > 0)
         });
 
         //get html page from headline urls
@@ -120,21 +130,21 @@ async function run() {
         }));
 
        entries = entries.filter(x => {
-            return x.text;
-        })
+            return x;
+        });
 
-
-
-        await getNluData(entries);
-
-        //TODO: get topics/keywords/entities
+        entries = await getNluData(entries);
 
         //insert data into sqlite db
-        insert(entries);
-
+        await insert(entries);
+        console.log('done');
+        fs.writeFileSync("hello.txt", "done");
+        
     } catch (error) {
         console.log(error);
     }
+    
+    process.exit();        
 }
 
 /**
