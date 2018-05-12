@@ -6,7 +6,8 @@ const extractor = require("unfluff");
 const axios = require("axios");
 const knex = require("knex")({
     client: 'sqlite3',
-    connection: { filename: "./mydb.sqlite" }
+    connection: { filename: "./mydb.sqlite" },
+    useNullAsDefault: true
 });
 
 const NLUV1 = require("watson-developer-cloud/natural-language-understanding/v1.js");
@@ -43,21 +44,13 @@ function getTopHeadlines() {
         language: 'en',
         sources: 'google-news'
     });
-    //return headlines.articles;
 }
 
-async function urlInDb(url){
-     let x = await knex('articles').where({url: url})
-    return x;
-    // if(rows.length > 0){
-    //     return false;
-    // } else {
-    //     return true;
-    // }
+function urlInDb(url){
+    return knex('articles').where({url: url});
 }
 
 function getHtml(url) {
-    //if(isUrl(url))
     return axios(url);
 }
 
@@ -114,9 +107,16 @@ async function run() {
             }
         });
 
-        entries = entries.filter(async function(x) {
-            let rows = await urlInDb(x.url);
-            return (rows.length > 0)
+        let rows = await Promise.all(entries.map(x => {
+            return urlInDb(x.url).then(y => {
+                if(y.length <= 0){
+                    return x;
+                }
+            });
+        }));
+
+        entries = rows.filter(x => {
+            return x;
         });
 
         //get html page from headline urls
@@ -136,7 +136,9 @@ async function run() {
         entries = await getNluData(entries);
 
         //insert data into sqlite db
-        await insert(entries);
+        if (entries.length > 0 ){
+            await insert(entries);
+        }
         console.log('done');
         fs.writeFileSync("hello.txt", "done");
         
