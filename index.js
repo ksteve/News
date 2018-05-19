@@ -41,8 +41,10 @@ function insert(data) {
 
 function getTopHeadlines() {
     return newsapi.v2.topHeadlines({
-        language: 'en',
-        sources: 'google-news'
+        language: 'en'
+        ,sources: 'google-news,bloomberg,cnn,the-washington-post,vice-news,bbc-news,bloomberg,fox-news,techcrunch,techradar',
+        pageSize: 40
+        //,category: 'technology,politics'
     });
 }
 
@@ -140,7 +142,7 @@ async function run() {
             await insert(entries);
         }
         console.log('done');
-        fs.writeFileSync("hello.txt", "done");
+        fs.writeFileSync("log.txt", new Date());
         
     } catch (error) {
         console.log(error);
