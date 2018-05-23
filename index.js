@@ -14,7 +14,7 @@ const knex = require("knex")({
 const NLUV1 = require("watson-developer-cloud/natural-language-understanding/v1.js");
 const nlu = new NLUV1({
     'username': '5f6b8a01-3714-4fad-a78f-8a057310f8f2',
-    'password': ` ${config.watson_pass}`,
+    'password': `${config.watson_pass}`,
     'version': '2018-03-16'
 });
 const analyze = util.promisify(nlu.analyze);
