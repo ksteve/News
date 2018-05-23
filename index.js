@@ -1,19 +1,20 @@
 const util = require('util');
 const fs = require('fs');
+const config = require("./config.json");
 const NewsApi = require("newsapi");
 const newsapi = new NewsApi("1f62f144d9584aaeb3fb553f42c989a6");
 const extractor = require("unfluff");
 const axios = require("axios");
 const knex = require("knex")({
     client: 'sqlite3',
-    connection: { filename: "./mydb.sqlite" },
+    connection: { filename: "./data/mydb.sqlite" },
     useNullAsDefault: true
 });
 
 const NLUV1 = require("watson-developer-cloud/natural-language-understanding/v1.js");
 const nlu = new NLUV1({
     'username': '5f6b8a01-3714-4fad-a78f-8a057310f8f2',
-    'password': 'Sa33OCUMOpRR',
+    'password': ` ${config.watson_pass}`,
     'version': '2018-03-16'
 });
 const analyze = util.promisify(nlu.analyze);
